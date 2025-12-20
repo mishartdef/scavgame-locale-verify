@@ -3,12 +3,7 @@
     "gameVer": 4,
     "main": {
         "bandage": "Verband",
-        "bandagedsc": "Eine Verbandrolle mit Binde. Dient zur Verlangsamung von Blutungen, Stabilisierung von Frakturen und Unterstützung der Hautheilung. Hat keinen Einfluss auf die Muskelgesundheit.",
-        "rippeddressing": "Zerrissene Kleidungfetzen",
-        "rippeddressingdsc": "Ein kleiner Haufen zerrissener Kleidungsfetzen. Kann als improvisierter Verband für blutende Wunden verwendet werden.",
-        "rag": "Stofffetzen",
-        "ragdsc": "Abgenutzte, zerknüllte Stofffetzen. Können als improvisierter Verband verwendet werden.",
-        "analgesicgauze": "Medizinische Mullbinde",
+        "bandagedsc": "Eine Verbandrolle mit Binde. Dient zur Verlangsamung von Blutungen, Stabilisierung von Frakturen аzinische Mullbinde",
         "analgesicgauzedsc": "Gewebter Mull aus Baumwolle mit schmerzstillenden Wirkstoffen. Verlangsamt Blutungen und lindert Schmerzen bei Verletzungen.",
         "alginate": "Alginatverband",
         "alginatedsc": "Verband aus Kohlenhydratquellen, die von klinischen Bakterienarten auf die gleiche Weise freigesetzt werden wie die Biofilmbildung. Verlangsamt Blutungen, verbessert die Hautheilung erheblich und wirkt Infektionen entgegen.",
