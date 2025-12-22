@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main", "master" ]
     paths:
-      - '**.json' 
+      - '**.json'
 
 jobs:
   build:
@@ -13,12 +13,44 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
 
-    - name: Run Validator
-      # Need to run verifier only for one file, but i don't know how rn
-      run: dotnet run --project validator/validator.csproj
+    - name: Find changed and added locale files
+      id: find_changed_files
+      run: |
+        # Fetch the base branch to compare changes
+        git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1 || true
+        # Get list of changed or added locale files
+        CHANGED=$(git diff --name-only --diff-filter=AM origin/${{ github.event.pull_request.base.ref }}...${{ github.sha }} | grep '\.json$' || true)
+        # If there found something, set output
+        if [ -n "$CHANGED" ]; then
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          printf "%s\n" $CHANGED >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        # Otherwise, set empty output for ignoring next step
+        else
+          echo "files=" >> $GITHUB_OUTPUT
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    - name: Run Validator for changed and added locale files
+      id: run_validator
+      if: ${{ steps.find_changed_files.outputs.has_changes == 'true' }}
+      run: |
+        echo "Changed files:"
+        echo "${{ steps.find_changed_files.outputs.files }}"
+        # Running validator for each changed or added locale file
+        while read -r file; do
+          [ -z "$file" ] && continue
+          # Verifying locale file with latest original EN.json
+          dotnet run --project validator/validator.csproj -- "$file"
+        done <<< "${{ steps.find_changed_files.outputs.files }}"
+      shell: bash

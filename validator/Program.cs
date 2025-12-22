@@ -4,20 +4,24 @@
 string localeDir = Directory.GetCurrentDirectory();
 
 // Getting path to original locale file
-string originalFilePath = Path.Combine(localeDir, "EN.json");
+string originalFilePath = args.Length >= 2 ? Path.Combine(localeDir, args[1])
+    : Path.Combine(localeDir, "EN.json");
 
 if (!File.Exists(originalFilePath))
 {
     Console.WriteLine($"::error::Original locale file not found: {originalFilePath}");
     MarkAsFailed();
 }
+
 else
 {
+    Console.WriteLine($"Original locale file: {Path.GetFileName(originalFilePath)}");
+
     // Getting all keys from original locale file
     var originalKeys = GetFullKeys(originalFilePath);
 
     // Getting all verify files from locale directory
-    var filesToVerify = args.Length > 0 ? args 
+    var filesToVerify = args.Length >= 1 ? [Path.Combine(localeDir, args[0])]
         : Directory.GetFiles(localeDir, "*.json");
 
     // Checking all locale files
@@ -38,20 +42,32 @@ else
             }
             else
             {
+                // Missing keys are critical, without them game will use keys name (e.g. bandage bandagedcs)
                 if (missingKeys.Any())
                 {
-                    // Missing keys are critical, without them game will use keys name (e.g. bandage bandagedcs)
-                    Console.WriteLine($"::error file={fileName}::Missing {missingKeys.Count} keys.");
-                    Console.WriteLine($"[Error] Missing keys: ({missingKeys.Count}):");
+                    if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                    {
+                        Console.WriteLine($"::error file={fileName}::Missing {missingKeys.Count} keys.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Error] Missing keys: ({missingKeys.Count}):");
+                    }
                     missingKeys.ForEach(k => Console.WriteLine($"   - {k}"));
                     MarkAsFailed();
                 }
 
+                // Extra keys are not that critical, but they can be confusing for the translators
                 if (extraKeys.Any())
                 {
-                    // Extra keys are not that critical, but they can be confusing for the translators
-                    Console.WriteLine($"::warning file={fileName}::Found {extraKeys.Count} extra keys.");
-                    Console.WriteLine($"[Warning] Extra keys: ({extraKeys.Count}):");
+                    if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                    {
+                        Console.WriteLine($"::warning file={fileName}::Found {extraKeys.Count} extra keys.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Warning] Extra keys: ({extraKeys.Count}):");
+                    }
                     extraKeys.ForEach(k => Console.WriteLine($"   + {k}"));
                 }
             }
