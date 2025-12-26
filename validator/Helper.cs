@@ -24,6 +24,7 @@ public static class Helper
         {
             Console.WriteLine($"::error file={Path.GetFileName(path)}::Failed to parse JSON: {ex.Message}");
             _hasCriticalError = true;
+            ValidationCheck();
             return new List<string>();
         }
     }
