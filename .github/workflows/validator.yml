@@ -2,55 +2,38 @@ name: Localization Validator
 
 on:
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "develop", "action" ]
     paths:
       - '**.json'
 
 jobs:
-  build:
+  list-locals:
     runs-on: ubuntu-latest
-
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: set-matrix 
+        run: |
+          # Getting changed and added locals files
+          FILES=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}...HEAD | grep '\.json$' | grep -v 'EN.json' | jq -R -s -c 'split("\n")[:-1]')
+          echo "matrix=$FILES" >> $GITHUB_OUTPUT
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
-
-    - name: Find changed and added locale files
-      id: find_changed_files
-      run: |
-        # Fetch the base branch to compare changes
-        git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1 || true
-        # Get list of changed or added locale files
-        CHANGED=$(git diff --name-only --diff-filter=AM origin/${{ github.event.pull_request.base.ref }}...${{ github.sha }} | grep '\.json$' || true)
-        # If there found something, set output
-        if [ -n "$CHANGED" ]; then
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          printf "%s\n" $CHANGED >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-        # Otherwise, set empty output for ignoring next step
-        else
-          echo "files=" >> $GITHUB_OUTPUT
-          echo "has_changes=false" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
-    - name: Run Validator for changed and added locale files
-      id: run_validator
-      if: ${{ steps.find_changed_files.outputs.has_changes == 'true' }}
-      run: |
-        echo "Changed files:"
-        echo "${{ steps.find_changed_files.outputs.files }}"
-        # Running validator for each changed or added locale file
-        while read -r file; do
-          [ -z "$file" ] && continue
-          # Verifying locale file with latest original EN.json
-          dotnet run --project validator/validator.csproj -- "$file"
-        done <<< "${{ steps.find_changed_files.outputs.files }}"
-      shell: bash
+  validate:
+    needs: list-locals
+    # Run only if there are changed or added locals files
+    if: ${{ needs.list-locals.outputs.matrix != '[]' && needs.list-locals.outputs.matrix != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJson(needs.list-locals.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Validate ${{ matrix.file }}
+        run: dotnet run --project validator/validator.csproj -- "${{ matrix.file }}"
