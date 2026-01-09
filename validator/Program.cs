@@ -1,5 +1,8 @@
 ﻿using static validator.Helper;
 
+// Checking if running in GitHub Actions environment
+bool IsAction = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+
 // Getting path to locales directory
 string localeDir = Directory.GetCurrentDirectory();
 
@@ -9,7 +12,14 @@ string originalFilePath = args.Length >= 2 ? Path.Combine(localeDir, args[1])
 
 if (!File.Exists(originalFilePath))
 {
-    Console.WriteLine($"::error::Original locale file not found: {originalFilePath}");
+    if (IsAction)
+    {
+        Console.WriteLine($"::error::Original locale file not found: {originalFilePath}");
+    }
+    else
+    {
+        Console.WriteLine($"[Error] Original locale file not found: {originalFilePath}");
+    }
     MarkAsFailed();
 }
 
@@ -36,16 +46,12 @@ else
             var missingKeys = originalKeys.Except(currentKeys).ToList();
             var extraKeys = currentKeys.Except(originalKeys).ToList();
 
-            if (!missingKeys.Any() && !extraKeys.Any())
-            {
-                Console.WriteLine($"[Pass] {fileName} is valid.");
-            }
-            else
+            if (missingKeys.Any() && extraKeys.Any())
             {
                 // Missing keys are critical, without them game will use keys name (e.g. bandage bandagedcs)
                 if (missingKeys.Any())
                 {
-                    if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                    if (IsAction)
                     {
                         Console.WriteLine($"::error file={fileName}::Missing {missingKeys.Count} keys.");
                     }
@@ -60,7 +66,7 @@ else
                 // Extra keys are not that critical, but they can be confusing for the translators
                 if (extraKeys.Any())
                 {
-                    if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                    if (IsAction)
                     {
                         Console.WriteLine($"::warning file={fileName}::Found {extraKeys.Count} extra keys.");
                     }
@@ -81,9 +87,5 @@ else
     }
 }
 
-
-
 // If there was a critical error (missing keys or exception), then exit with error code
 ValidationCheck();
-
-Console.WriteLine("\n[RESULT] All files passed successfully!");
