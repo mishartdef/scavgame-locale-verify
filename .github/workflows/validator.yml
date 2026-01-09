@@ -1,8 +1,6 @@
 name: Localization Validator
 
 on:
-  check_run:
-    types: [rerequested]
   push:
     branches: [ "main", "master" ]
     paths:
@@ -11,7 +9,13 @@ on:
     branches: [ "main", "master" ]
     paths:
       - '**.json'
-
+  workflow_dispatch:
+    inputs:
+      files_to_verify:
+        description: 'Path to a specific locale file'
+        required: false
+        default: ''
+    
 jobs:
   build:
     runs-on: ubuntu-latest
